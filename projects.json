@@ -1,0 +1,82 @@
+{
+  "studio": "FMCOSKUN STUDIO",
+  "tagline": "Streaming Your Success To New Orbits",
+  "orbits": [
+    {
+      "id": "ORBIT-ALPHA",
+      "label": "Digital Experiences",
+      "radius": 2.35,
+      "tiltX": 0.42,
+      "tiltZ": -0.25,
+      "angularSpeed": 0.45,
+      "initialPhase": 0.40,
+      "nodeSize": 0.16,
+      "code": "LAB-01 // SYS-01",
+      "title": "Aether Orbital Telemetry Interface",
+      "category": "Digital Experiences",
+      "status": "PRODUCTION READY",
+      "summary": "Low-latency 3D control deck for visualizing satellite constellation trajectories and real-time signal handoffs.",
+      "architectureNote": "Single-pass procedural geometry pipeline + zero-state pointer parallax loop with 60 FPS deterministic frame pacing.",
+      "liveUrl": "https://fmcoskun.dev/projects/aether-orbital",
+      "repoUrl": "https://github.com/fmcoskun/aether-orbital-telemetry",
+      "techStack": ["C++17", "Raylib / OpenGL", "React Three Fiber", "TypeScript"],
+      "pipeline": ["Sensor Ingest", "Quaternion Solver", "3D Scene Graph", "60FPS HUD Render"],
+      "metrics": [
+        { "label": "Frame Pacing Stability", "value": "99.4%", "ratio": 0.994 },
+        { "label": "GPU Draw Call Efficiency", "value": "94.0%", "ratio": 0.940 },
+        { "label": "Pointer Parallax Latency", "value": "< 2.1ms", "ratio": 0.960 }
+      ]
+    },
+    {
+      "id": "ORBIT-BETA",
+      "label": "Intelligent Automation",
+      "radius": 3.15,
+      "tiltX": -0.55,
+      "tiltZ": 0.38,
+      "angularSpeed": -0.32,
+      "initialPhase": 2.10,
+      "nodeSize": 0.17,
+      "code": "LAB-02 // SYS-02",
+      "title": "Synapse Autonomous Triage Engine",
+      "category": "Intelligent Automation",
+      "status": "ARCHITECTURE SPEC",
+      "summary": "Deterministic and AI-assisted workflow router that validates incoming client briefs against strict domain schemas.",
+      "architectureNote": "Chain-of-Responsibility task pipeline with zero-trust schema guards and human-in-the-loop verification checkpoints.",
+      "liveUrl": "https://fmcoskun.dev/projects/synapse-triage",
+      "repoUrl": "https://github.com/fmcoskun/synapse-autonomous-triage",
+      "techStack": ["Workflow Automation", "Schema Guards", "C++ Templates", "Event Pipelines"],
+      "pipeline": ["Brief Webhook", "Schema Validator", "AI Classifier", "Dispatch Queue"],
+      "metrics": [
+        { "label": "Schema Validation Accuracy", "value": "99.8%", "ratio": 0.998 },
+        { "label": "Automated Routing Rate", "value": "88.5%", "ratio": 0.885 },
+        { "label": "Throughput Capacity", "value": "4.2k req/s", "ratio": 0.920 }
+      ]
+    },
+    {
+      "id": "ORBIT-GAMMA",
+      "label": "Systems & Integration",
+      "radius": 3.95,
+      "tiltX": 0.22,
+      "tiltZ": 0.62,
+      "angularSpeed": 0.22,
+      "initialPhase": 4.20,
+      "nodeSize": 0.15,
+      "code": "LAB-03 // SYS-03",
+      "title": "Nexus Multi-Source Data Mesh",
+      "category": "Systems & Integration",
+      "status": "INTERNAL LAB",
+      "summary": "Resilient API orchestration layer synchronizing distributed state and telemetry webhooks into one unified core.",
+      "architectureNote": "Isolated adapter boundaries with exponential backoff retry queues and circuit-breaker fallback telemetry.",
+      "liveUrl": "https://fmcoskun.dev/projects/nexus-data-mesh",
+      "repoUrl": "https://github.com/fmcoskun/nexus-data-mesh",
+      "techStack": ["Systems Architecture", "API Gateways", "State Sync", "Telemetry HUD"],
+      "pipeline": ["Edge Gateways", "Circuit Breaker", "State Normalizer", "Telemetry Core"],
+      "metrics": [
+        { "label": "Mesh Uptime SLA", "value": "99.95%", "ratio": 0.999 },
+        { "label": "Circuit Recovery Speed", "value": "91.2%", "ratio": 0.912 },
+        { "label": "State Sync Consistency", "value": "97.6%", "ratio": 0.976 }
+      ]
+    }
+  ]
+}
+

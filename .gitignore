@@ -1,0 +1,14 @@
+# Derleme çıktıları
+*.exe
+*.o
+*.obj
+build/
+cmake-build-*/
+
+# Uygulama çalışırken üretilen ekran görüntüleri
+fmcoskun_capture_*.png
+fmcoskun_studio_capture.png
+
+# Editör / IDE
+.vscode/
+.idea/
