@@ -1,6 +1,7 @@
 {
   "studio": "FMCOSKUN STUDIO",
   "tagline": "Streaming Your Success To New Orbits",
+  "githubProfile": "https://github.com/fmcoskun",
   "orbits": [
     {
       "id": "ORBIT-ALPHA",
@@ -17,8 +18,6 @@
       "status": "PRODUCTION READY",
       "summary": "Low-latency 3D control deck for visualizing satellite constellation trajectories and real-time signal handoffs.",
       "architectureNote": "Single-pass procedural geometry pipeline + zero-state pointer parallax loop with 60 FPS deterministic frame pacing.",
-      "liveUrl": "https://fmcoskun.dev/projects/aether-orbital",
-      "repoUrl": "https://github.com/fmcoskun/aether-orbital-telemetry",
       "techStack": ["C++17", "Raylib / OpenGL", "React Three Fiber", "TypeScript"],
       "pipeline": ["Sensor Ingest", "Quaternion Solver", "3D Scene Graph", "60FPS HUD Render"],
       "metrics": [
@@ -42,8 +41,6 @@
       "status": "ARCHITECTURE SPEC",
       "summary": "Deterministic and AI-assisted workflow router that validates incoming client briefs against strict domain schemas.",
       "architectureNote": "Chain-of-Responsibility task pipeline with zero-trust schema guards and human-in-the-loop verification checkpoints.",
-      "liveUrl": "https://fmcoskun.dev/projects/synapse-triage",
-      "repoUrl": "https://github.com/fmcoskun/synapse-autonomous-triage",
       "techStack": ["Workflow Automation", "Schema Guards", "C++ Templates", "Event Pipelines"],
       "pipeline": ["Brief Webhook", "Schema Validator", "AI Classifier", "Dispatch Queue"],
       "metrics": [
@@ -67,8 +64,6 @@
       "status": "INTERNAL LAB",
       "summary": "Resilient API orchestration layer synchronizing distributed state and telemetry webhooks into one unified core.",
       "architectureNote": "Isolated adapter boundaries with exponential backoff retry queues and circuit-breaker fallback telemetry.",
-      "liveUrl": "https://fmcoskun.dev/projects/nexus-data-mesh",
-      "repoUrl": "https://github.com/fmcoskun/nexus-data-mesh",
       "techStack": ["Systems Architecture", "API Gateways", "State Sync", "Telemetry HUD"],
       "pipeline": ["Edge Gateways", "Circuit Breaker", "State Normalizer", "Telemetry Core"],
       "metrics": [

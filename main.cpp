@@ -314,6 +314,9 @@ namespace FmCoskunStudio {
         long configModTime{0};
         float configWatchTimer{0.0f};
 
+        // Projeye özel repo tanımlı değilse tüm GitHub butonları bu profile yönlenir
+        std::string githubProfileUrl{DEFAULT_GITHUB_PROFILE};
+
         // Bildirim (Toast Banner) Durumu
         std::string toastMessage{};
         float toastTimer{0.0f};
@@ -327,6 +330,7 @@ namespace FmCoskunStudio {
         std::string rebuildOrbitsFromConfig() {
             ConfigLoadResult result = PortfolioConfigLoader::loadFromJsonFile("projects.json");
             jsonLoadedFromDisk = result.loadedFromFile;
+            githubProfileUrl = result.githubProfile;
             configPath = result.sourcePath;
             configModTime = FileExists(configPath.c_str()) ? GetFileModTime(configPath.c_str()) : 0;
             const auto& configs = result.orbits;
@@ -384,6 +388,19 @@ namespace FmCoskunStudio {
         bool isPointInScene(Vector2 p) const {
             return p.x >= layout.sceneLeft && p.y >= layout.headerH &&
                    p.y <= static_cast<float>(screenHeight) - layout.footerH;
+        }
+
+        const std::string& githubLinkFor(const ProjectSpec& proj) const {
+            return proj.repoUrl.empty() ? githubProfileUrl : proj.repoUrl;
+        }
+
+        static const char* githubButtonLabel(const ProjectSpec& proj) {
+            return proj.repoUrl.empty() ? "GITHUB PROFILE" : "GITHUB SOURCE";
+        }
+
+        void openExternalLink(const std::string& url) {
+            OpenURL(url.c_str());
+            showToast("OPENING BROWSER: " + url, 2.5f);
         }
 
         static std::string timestampedScreenshotName() {
@@ -876,19 +893,25 @@ namespace FmCoskunStudio {
             if (!proj.techStack.empty()) iy += 32.0f;
 
             // 5. Canlı Etkileşim Aksiyon Butonları (OpenURL & Deep-Dive Modal)
+            // Canlı demo butonu yalnızca projede liveUrl tanımlıysa gösterilir
+            const bool hasLiveDemo = !proj.liveUrl.empty();
+            const float btnCount = hasLiveDemo ? 3.0f : 2.0f;
             float btnY = iy + 10.0f;
-            float btnW = (panelW - 48.0f) / 3.0f;
+            float btnW = (innerW - 8.0f * (btnCount - 1.0f)) / btnCount;
+            float btnX = textX;
 
-            if (drawInteractiveButton({textX, btnY, btnW, 38.0f}, "ARCH & METRICS", true, enabled)) {
+            if (drawInteractiveButton({btnX, btnY, btnW, 38.0f}, "ARCH & METRICS", true, enabled)) {
                 showDeepDiveModal = true;
             }
-            if (drawInteractiveButton({textX + 8.0f + btnW, btnY, btnW, 38.0f}, "OPEN LIVE DEMO", false, enabled)) {
-                OpenURL(proj.liveUrl.c_str());
-                showToast("OPENING BROWSER: " + proj.liveUrl, 2.5f);
+            btnX += btnW + 8.0f;
+            if (hasLiveDemo) {
+                if (drawInteractiveButton({btnX, btnY, btnW, 38.0f}, "OPEN LIVE DEMO", false, enabled)) {
+                    openExternalLink(proj.liveUrl);
+                }
+                btnX += btnW + 8.0f;
             }
-            if (drawInteractiveButton({textX + 16.0f + btnW * 2.0f, btnY, btnW, 38.0f}, "GITHUB SOURCE", false, enabled)) {
-                OpenURL(proj.repoUrl.c_str());
-                showToast("OPENING REPOSITORY: " + proj.repoUrl, 2.5f);
+            if (drawInteractiveButton({btnX, btnY, btnW, 38.0f}, githubButtonLabel(proj), false, enabled)) {
+                openExternalLink(githubLinkFor(proj));
             }
 
             EndScissorMode();
@@ -980,7 +1003,7 @@ namespace FmCoskunStudio {
 
             // 2. Canlı Telemetri & SLA Performans Barları
             if (!proj.metrics.empty()) {
-                typo.drawMono("VERIFIED TELEMETRY & BENCHMARK METRICS:", x, y, 11.0f, Tokens::ACCENT_PRIMARY);
+                typo.drawMono("TARGET BENCHMARK METRICS:", x, y, 11.0f, Tokens::ACCENT_PRIMARY);
                 y += 24.0f;
 
                 for (const auto& m : proj.metrics) {
@@ -1001,11 +1024,16 @@ namespace FmCoskunStudio {
             EndScissorMode();
 
             // Alt Butonlar
-            if (drawInteractiveButton({x, buttonsY, 220.0f, 34.0f}, "LAUNCH LIVE DEPLOYMENT", true)) {
-                OpenURL(proj.liveUrl.c_str());
+            float modalBtnX = x;
+            if (!proj.liveUrl.empty()) {
+                if (drawInteractiveButton({modalBtnX, buttonsY, 220.0f, 34.0f}, "LAUNCH LIVE DEPLOYMENT", true)) {
+                    openExternalLink(proj.liveUrl);
+                }
+                modalBtnX += 234.0f;
             }
-            if (drawInteractiveButton({x + 234.0f, buttonsY, 220.0f, 34.0f}, "INSPECT SOURCE REPOSITORY", false)) {
-                OpenURL(proj.repoUrl.c_str());
+            const char* modalGithubLabel = proj.repoUrl.empty() ? "VISIT GITHUB PROFILE" : "INSPECT SOURCE REPOSITORY";
+            if (drawInteractiveButton({modalBtnX, buttonsY, 220.0f, 34.0f}, modalGithubLabel, proj.liveUrl.empty())) {
+                openExternalLink(githubLinkFor(proj));
             }
         }
 

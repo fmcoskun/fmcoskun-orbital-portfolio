@@ -9,7 +9,7 @@ cmake-build-*/
 fmcoskun_capture_*.png
 fmcoskun_studio_capture.png
 # raylib F12 tuşunda kendi içinde de ekran görüntüsü alır (SUPPORT_SCREEN_CAPTURE)
-screenshot*.png
+/screenshot[0-9]*.png
 
 # Editör / IDE
 .vscode/

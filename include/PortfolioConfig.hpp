@@ -30,6 +30,9 @@ namespace FmCoskunStudio {
         constexpr Color TEXT_ON_BRIGHT  = { 0,    0,   0, 255 }; // #000000
     }
 
+    // Projelerde repoUrl verilmemişse butonların yönlendiği varsayılan GitHub profili
+    inline constexpr const char* DEFAULT_GITHUB_PROFILE = "https://github.com/fmcoskun";
+
     // ========================================================================
     // 2. VERİ MODELLERİ (PORTFOLIO, METRIC & ORBIT CONFIG STRUCTS)
     // ========================================================================
@@ -46,8 +49,8 @@ namespace FmCoskunStudio {
         std::string status;
         std::string summary;
         std::string architectureNote;
-        std::string liveUrl;
-        std::string repoUrl;
+        std::string liveUrl; // Boşsa canlı demo butonu gösterilmez
+        std::string repoUrl; // Boşsa GitHub butonu profile yönlenir
         std::vector<std::string> techStack;
         std::vector<std::string> pipeline;
         std::vector<MetricSpec> metrics;
@@ -68,6 +71,7 @@ namespace FmCoskunStudio {
     struct ConfigLoadResult {
         std::vector<OrbitNodeConfig> orbits;
         bool loadedFromFile{false};
+        std::string githubProfile{DEFAULT_GITHUB_PROFILE};
         std::string sourcePath; // Okunmaya çalışılan dosyanın çözümlenmiş yolu
         std::string error;      // Yerleşik verilere düşülme sebebi (dosya hiç yoksa boş)
     };
@@ -112,8 +116,8 @@ namespace FmCoskunStudio {
             cfg.project.status           = o.getString("status", "CONCEPT");
             cfg.project.summary          = o.getString("summary", "");
             cfg.project.architectureNote = o.getString("architectureNote", "");
-            cfg.project.liveUrl          = o.getString("liveUrl", "https://fmcoskun.dev");
-            cfg.project.repoUrl          = o.getString("repoUrl", "https://github.com/fmcoskun");
+            cfg.project.liveUrl          = o.getString("liveUrl", "");
+            cfg.project.repoUrl          = o.getString("repoUrl", "");
             cfg.project.techStack        = o.getStringArray("techStack");
             cfg.project.pipeline         = o.getStringArray("pipeline");
 
@@ -138,8 +142,7 @@ namespace FmCoskunStudio {
                         "PRODUCTION READY",
                         "Low-latency 3D control deck for visualizing satellite constellation trajectories and real-time signal handoffs.",
                         "Single-pass procedural geometry pipeline + zero-state pointer parallax loop with 60 FPS deterministic frame pacing.",
-                        "https://fmcoskun.dev/projects/aether-orbital",
-                        "https://github.com/fmcoskun/aether-orbital-telemetry",
+                        "", "",
                         {"C++17", "Raylib / OpenGL", "React Three Fiber", "TypeScript"},
                         {"Sensor Ingest", "Quaternion Solver", "3D Scene Graph", "60FPS HUD Render"},
                         {
@@ -159,8 +162,7 @@ namespace FmCoskunStudio {
                         "ARCHITECTURE SPEC",
                         "Deterministic and AI-assisted workflow router that validates incoming client briefs against strict domain schemas.",
                         "Chain-of-Responsibility task pipeline with zero-trust schema guards and human-in-the-loop verification checkpoints.",
-                        "https://fmcoskun.dev/projects/synapse-triage",
-                        "https://github.com/fmcoskun/synapse-autonomous-triage",
+                        "", "",
                         {"Workflow Automation", "Schema Guards", "C++ Templates", "Event Pipelines"},
                         {"Brief Webhook", "Schema Validator", "AI Classifier", "Dispatch Queue"},
                         {
@@ -180,8 +182,7 @@ namespace FmCoskunStudio {
                         "INTERNAL LAB",
                         "Resilient API orchestration layer synchronizing distributed state and telemetry webhooks into one unified core.",
                         "Isolated adapter boundaries with exponential backoff retry queues and circuit-breaker fallback telemetry.",
-                        "https://fmcoskun.dev/projects/nexus-data-mesh",
-                        "https://github.com/fmcoskun/nexus-data-mesh",
+                        "", "",
                         {"Systems Architecture", "API Gateways", "State Sync", "Telemetry HUD"},
                         {"Edge Gateways", "Circuit Breaker", "State Normalizer", "Telemetry Core"},
                         {
@@ -224,6 +225,10 @@ namespace FmCoskunStudio {
             if (!Json::Parser(content).parse(root, parseError)) {
                 return fallback(parseError);
             }
+
+            // Yalnızca https bağlantıları kabul edilir; aksi halde varsayılan profil kullanılır
+            std::string profile = root.getString("githubProfile", DEFAULT_GITHUB_PROFILE);
+            if (profile.rfind("https://", 0) == 0) result.githubProfile = profile;
 
             const Json::Value* orbits = root.find("orbits");
             if (!orbits || !orbits->isArray()) {
