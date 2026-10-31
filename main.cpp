@@ -1,13 +1,13 @@
 /**
  * ============================================================================
- * PROJECT: FMCOSKUN STUDIO â€” 3D INTERACTIVE DESKTOP PORTFOLIO (C++17 / OOP)
+ * PROJECT: FMCOSKUN STUDIO — 3D INTERACTIVE DESKTOP PORTFOLIO (C++17 / OOP)
  * CORE CONCEPT: "Streaming Your Success To New Orbits"
  * GRAPHICS ENGINE: Raylib (OpenGL Hardware-Accelerated 3D + 2D HUD)
  * ============================================================================
  *
  * DERLEME KOMUTLARI (BUILD INSTRUCTIONS):
  * ----------------------------------------------------------------------------
- * 1) Makefile (Ã–nerilen / Recommended):
+ * 1) Makefile (Önerilen / Recommended):
  *    mingw32-make
  *    mingw32-make run
  *
@@ -23,17 +23,17 @@
  * KONTROLLER (INTERACTIVE CONTROLS):
  * ----------------------------------------------------------------------------
  * - Fare Hareketi     : 3B Kamera Paralaks Etkisi (Pointer-Ref Parallax)
- * - 3B Uyduya TÄ±klama : 3B Raycasting ile DoÄŸrudan YÃ¶rÃ¼nge / Proje SeÃ§imi
- * - Fare TekerleÄŸi    : 3B Sahneye YakÄ±nlaÅŸ / UzaklaÅŸ (Smooth FOV Zoom)
- * - [1], [2], [3]     : YÃ¶rÃ¼nge DÃ¼ÄŸÃ¼mlerini SeÃ§ (ORBIT-ALPHA, BETA, GAMMA)
- * - [ENTER]           : SeÃ§ili Projenin Derin Mimari & Metrik ModalÄ±nÄ± AÃ§
- * - [F] TuÅŸu          : KamerayÄ± SeÃ§ili 3B Uyduya Kilitle / Serbest BÄ±rak
- * - [L] TuÅŸu          : projects.json YapÄ±landÄ±rmasÄ±nÄ± CanlÄ± Yeniden YÃ¼kle
- * - [S] TuÅŸu          : Sinyal AkÄ±ÅŸlarÄ±nÄ± (Signal Streams) AÃ§ / Kapat
- * - [R] TuÅŸu          : Reduced Motion (Statik / Hareketli Mod) GeÃ§iÅŸi
- * - [YukarÄ± / AÅŸaÄŸÄ±]  : YÃ¶rÃ¼nge HÄ±z Ã‡arpanÄ±nÄ± (Velocity Multiplier) Ayarla
- * - [SPACE]           : FMCOSKUN Logosu 360Â° Karakter DÃ¶nÃ¼ÅŸÃ¼nÃ¼ Tetikle
- * - [F11] / [F12]     : Tam Ekran GeÃ§iÅŸi / Ekran GÃ¶rÃ¼ntÃ¼sÃ¼ Kaydet (.png)
+ * - 3B Uyduya Tıklama : 3B Raycasting ile Doğrudan Yörünge / Proje Seçimi
+ * - Fare Tekerleği    : 3B Sahneye Yakınlaş / Uzaklaş (Smooth FOV Zoom)
+ * - [1], [2], [3]     : Yörünge Düğümlerini Seç (ORBIT-ALPHA, BETA, GAMMA)
+ * - [ENTER]           : Seçili Projenin Derin Mimari & Metrik Modalını Aç
+ * - [F] Tuşu          : Kamerayı Seçili 3B Uyduya Kilitle / Serbest Bırak
+ * - [L] Tuşu          : projects.json Yapılandırmasını Canlı Yeniden Yükle
+ * - [S] Tuşu          : Sinyal Akışlarını (Signal Streams) Aç / Kapat
+ * - [R] Tuşu          : Reduced Motion (Statik / Hareketli Mod) Geçişi
+ * - [Yukarı / Aşağı]  : Yörünge Hız Çarpanını (Velocity Multiplier) Ayarla
+ * - [SPACE]           : FMCOSKUN Logosu 360° Karakter Dönüşünü Tetikle
+ * - [F11] / [F12]     : Tam Ekran Geçişi / Ekran Görüntüsü Kaydet (.png)
  * ============================================================================
  */
 
@@ -45,7 +45,7 @@
 namespace FmCoskunStudio {
 
     // ========================================================================
-    // 1. YÃœKSEK Ã‡Ã–ZÃœNÃœRLÃœKLÃœ TÄ°POGRAFÄ° YÃ–NETÄ°CÄ°SÄ° (HiDPI TTF FONT MANAGER)
+    // 1. YÜKSEK ÇÖZÜNÜRLÜKLÜ TİPOGRAFİ YÖNETİCİSİ (HiDPI TTF FONT MANAGER)
     // ========================================================================
     class TypographyManager {
     private:
@@ -136,7 +136,7 @@ namespace FmCoskunStudio {
             return lines;
         }
 
-        // Ã‡izilen metin bloÄŸunun toplam yÃ¼ksekliÄŸini dÃ¶ndÃ¼rÃ¼r (akÄ±ÅŸkan layout iÃ§in)
+        // Çizilen metin bloğunun toplam yüksekliğini döndürür (akışkan layout için)
         float drawWrappedUi(const std::string& text, float x, float y, float maxWidth, float fontSize, float lineGap, Color color) const {
             auto lines = wrapUi(text, maxWidth, fontSize);
             for (size_t i = 0; i < lines.size(); ++i) {
@@ -149,7 +149,7 @@ namespace FmCoskunStudio {
             return blockHeight(wrapUi(text, maxWidth, fontSize).size(), fontSize, lineGap);
         }
 
-        // GeniÅŸliÄŸe sÄ±ÄŸmayan tek satÄ±rlÄ±k metni "..." ile kÄ±saltÄ±r
+        // Genişliğe sığmayan tek satırlık metni "..." ile kısaltır
         std::string fitUi(const std::string& text, float fontSize, float maxWidth) const {
             return fitText(text, maxWidth, [&](const std::string& t) { return measureUi(t, fontSize); });
         }
@@ -170,7 +170,7 @@ namespace FmCoskunStudio {
             std::string cut = text;
             while (!cut.empty() && measure(cut + "...") > maxWidth) {
                 cut.pop_back();
-                // UTF-8 Ã§ok baytlÄ± karakterlerin ortasÄ±ndan kesme
+                // UTF-8 çok baytlı karakterlerin ortasından kesme
                 while (!cut.empty() && (static_cast<unsigned char>(cut.back()) & 0xC0) == 0x80) cut.pop_back();
                 if (!cut.empty() && (static_cast<unsigned char>(cut.back()) & 0xC0) == 0xC0) cut.pop_back();
             }
@@ -179,7 +179,7 @@ namespace FmCoskunStudio {
     };
 
     // ========================================================================
-    // 2. ANÄ°MASYONLU FMCOSKUN LOGOSU SINIFI (STAGGERED CHARACTER FLIP)
+    // 2. ANİMASYONLU FMCOSKUN LOGOSU SINIFI (STAGGERED CHARACTER FLIP)
     // ========================================================================
     class AnimatedBrandLogo {
     private:
@@ -245,7 +245,7 @@ namespace FmCoskunStudio {
     };
 
     // ========================================================================
-    // 3. DUYARLI YERLEÅÄ°M Ã–LÃ‡ÃœLERÄ° (RESPONSIVE LAYOUT METRICS)
+    // 3. DUYARLI YERLEŞİM ÖLÇÜLERİ (RESPONSIVE LAYOUT METRICS)
     // ========================================================================
     struct LayoutMetrics {
         float headerH{64.0f};
@@ -255,7 +255,7 @@ namespace FmCoskunStudio {
         float panelY{82.0f};
         float panelW{520.0f};
         float panelBottom{804.0f};
-        float sceneLeft{560.0f}; // Bu x deÄŸerinin solu sol panele aittir; 3B etkileÅŸim saÄŸÄ±nda baÅŸlar
+        float sceneLeft{560.0f}; // Bu x değerinin solu sol panele aittir; 3B etkileşim sağında başlar
 
         void compute(int screenWidth, int screenHeight) {
             panelW      = Clamp(static_cast<float>(screenWidth) * 0.37f, 400.0f, 520.0f);
@@ -265,7 +265,7 @@ namespace FmCoskunStudio {
     };
 
     // ========================================================================
-    // 4. ANA UYGULAMA KONTROLCÃœSÃœ (MAIN PORTFOLIO APPLICATION CONTROLLER)
+    // 4. ANA UYGULAMA KONTROLCÜSÜ (MAIN PORTFOLIO APPLICATION CONTROLLER)
     // ========================================================================
     class StudioPortfolioApp {
     private:
@@ -284,14 +284,14 @@ namespace FmCoskunStudio {
         std::unique_ptr<ParticleField3D> particleField;
         AnimatedBrandLogo brandLogo;
 
-        // Durum DeÄŸiÅŸkenleri (Telemetry & Interactive State)
+        // Durum Değişkenleri (Telemetry & Interactive State)
         int selectedOrbitIndex{0};
         float orbitSpeedMultiplier{1.0f};
         bool showSignalStreams{true};
         bool reducedMotion{false};
         bool cameraFollowSelected{false};
         bool showDeepDiveModal{false};
-        bool modalOpenAtFrameStart{false}; // ModalÄ± aÃ§an tÄ±klamanÄ±n aynÄ± karede "dÄ±ÅŸarÄ± tÄ±klama" sayÄ±lmasÄ±nÄ± Ã¶nler
+        bool modalOpenAtFrameStart{false}; // Modalı açan tıklamanın aynı karede "dışarı tıklama" sayılmasını önler
         bool jsonLoadedFromDisk{false};
         bool anyUiHovered{false};
         Vector2 smoothPointer{0.0f, 0.0f};
@@ -364,7 +364,7 @@ namespace FmCoskunStudio {
             }
         }
 
-        // Arka plan katmanlarÄ± (header, sol panel) modal aÃ§Ä±kken fare girdisi almaz
+        // Arka plan katmanları (header, sol panel) modal açıkken fare girdisi almaz
         bool isBackgroundInteractive() const {
             return !showDeepDiveModal;
         }
@@ -399,7 +399,7 @@ namespace FmCoskunStudio {
         }
 
         void perform3DRaycasting(Vector2 mouse) {
-            // Sol panel veya modal aÃ§Ä±ksa 3B sahne tÄ±klamasÄ±nÄ± engelle
+            // Sol panel veya modal açıksa 3B sahne tıklamasını engelle
             if (showDeepDiveModal || mouse.x < layout.sceneLeft || mouse.y < layout.headerH ||
                 mouse.y > static_cast<float>(screenHeight) - layout.footerH) {
                 clearSceneHover();
@@ -430,7 +430,7 @@ namespace FmCoskunStudio {
                 }
             }
 
-            // Merkez Ã§ekirdek raycast kontrolÃ¼
+            // Merkez çekirdek raycast kontrolü
             if (hoveredIdx == -1) {
                 RayCollision coreCol = GetRayCollisionSphere(ray, centralCore->getPosition(), centralCore->getCollisionRadius());
                 centralCore->setHovered(coreCol.hit);
@@ -452,7 +452,7 @@ namespace FmCoskunStudio {
             anyUiHovered = false;
             Vector2 mouse = GetMousePosition();
 
-            // Modal aÃ§Ä±kken ESC ile kapatma
+            // Modal açıkken ESC ile kapatma
             if (showDeepDiveModal) {
                 clearSceneHover();
                 if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
@@ -511,14 +511,14 @@ namespace FmCoskunStudio {
                 orbitSpeedMultiplier = Clamp(orbitSpeedMultiplier - dt * 0.8f, 0.2f, 2.6f);
             }
 
-            // Fare TekerleÄŸi ile Smooth FOV Zoom
+            // Fare Tekerleği ile Smooth FOV Zoom
             float wheel = GetMouseWheelMove();
             if (std::abs(wheel) > 0.01f) {
                 targetFov = Clamp(targetFov - wheel * 3.2f, 24.0f, 58.0f);
             }
             camera.fovy += (targetFov - camera.fovy) * Clamp(dt * 10.0f, 0.0f, 1.0f);
 
-            // Fare Paralaks HesaplamasÄ±
+            // Fare Paralaks Hesaplaması
             float normX = (mouse.x / static_cast<float>(screenWidth)) * 2.0f - 1.0f;
             float normY = (mouse.y / static_cast<float>(screenHeight)) * 2.0f - 1.0f;
 
@@ -533,7 +533,7 @@ namespace FmCoskunStudio {
                 camera.position.y = 1.65f;
             }
 
-            // Kamera Hedef Kilidi (Overview veya SeÃ§ili 3B Uydu Takibi)
+            // Kamera Hedef Kilidi (Overview veya Seçili 3B Uydu Takibi)
             Vector3 desiredTarget = { -1.35f, 0.0f, 0.0f };
             if (cameraFollowSelected && !orbitNodes.empty()) {
                 Vector3 nodePos = orbitNodes[selectedOrbitIndex]->getPosition();
@@ -566,13 +566,13 @@ namespace FmCoskunStudio {
             particleField->update(dt, reducedMotion);
         }
 
-        // 3B Uzaydaki UydularÄ±n Ãœzerinde YÃ¼zen 2B Telemetri Etiketleri (World-to-Screen)
+        // 3B Uzaydaki Uyduların Üzerinde Yüzen 2B Telemetri Etiketleri (World-to-Screen)
         void draw3DWorldLabelsHUD() {
             for (size_t i = 0; i < orbitNodes.size(); ++i) {
                 const auto& node = orbitNodes[i];
                 Vector2 screenPos = GetWorldToScreen(node->getPosition(), camera);
 
-                // Sol panelin arkasÄ±na geÃ§en etiketleri gizle
+                // Sol panelin arkasına geçen etiketleri gizle
                 if (screenPos.x < layout.sceneLeft + 5.0f || screenPos.x > static_cast<float>(screenWidth - 20) ||
                     screenPos.y < layout.headerH + 11.0f  || screenPos.y > static_cast<float>(screenHeight) - layout.footerH - 13.0f) {
                     continue;
@@ -582,14 +582,14 @@ namespace FmCoskunStudio {
                 bool hov    = node->isHovered();
                 Color col   = (active || hov) ? Tokens::ACCENT_PRIMARY : Fade(Tokens::TEXT_SECONDARY, 0.72f);
 
-                // NiÅŸangah (Reticle) KÃ¶ÅŸe Ã‡izgileri
+                // Nişangah (Reticle) Köşe Çizgileri
                 int rx = static_cast<int>(screenPos.x);
                 int ry = static_cast<int>(screenPos.y);
                 int rSize = active ? 16 : (hov ? 14 : 10);
                 DrawRectangleLines(rx - rSize, ry - rSize, rSize * 2, rSize * 2,
                                    Fade(col, (active || hov) ? 0.85f : 0.35f));
 
-                // Ã‡apraz Lider Ã‡izgisi ve Bilgi Rozeti
+                // Çapraz Lider Çizgisi ve Bilgi Rozeti
                 DrawLine(rx + rSize, ry - rSize, rx + rSize + 14, ry - rSize - 10, col);
                 float tagX = static_cast<float>(rx + rSize + 16);
                 float tagY = static_cast<float>(ry - rSize - 20);
@@ -612,7 +612,7 @@ namespace FmCoskunStudio {
 
             brandLogo.draw(28, 15, typo, jsonLoadedFromDisk);
 
-            // Butonlar saÄŸ kenara hizalanÄ±r; geniÅŸlikleri sabit, konumlarÄ± pencere geniÅŸliÄŸinden tÃ¼retilir
+            // Butonlar sağ kenara hizalanır; genişlikleri sabit, konumları pencere genişliğinden türetilir
             const float camW = 165.0f, motW = 180.0f, specW = 202.0f, gap = 10.0f;
             float rightX = static_cast<float>(screenWidth) - layout.margin - (camW + motW + specW + gap * 2.0f);
             const bool enabled = isBackgroundInteractive();
@@ -629,14 +629,14 @@ namespace FmCoskunStudio {
                 reducedMotion = !reducedMotion;
             }
 
-            // [ENTER] Mimari Ä°nceleme Butonu
+            // [ENTER] Mimari İnceleme Butonu
             Rectangle specRect = {rightX + camW + motW + gap * 2.0f, 16.0f, specW, 32.0f};
             if (drawInteractiveButton(specRect, "[ENTER] DEEP-DIVE SPEC", true, enabled)) {
                 showDeepDiveModal = true;
             }
         }
 
-        // Inspector kartÄ±nÄ±n iÃ§erik yÃ¼ksekliÄŸini Ã§izmeden hesaplar (kart arka planÄ± iÃ§erikten Ã¶nce Ã§izildiÄŸi iÃ§in)
+        // Inspector kartının içerik yüksekliğini çizmeden hesaplar (kart arka planı içerikten önce çizildiği için)
         float measureInspectorHeight(const ProjectSpec& proj, float innerW) const {
             float h = 90.0f;
             h += typo.measureWrappedUi(proj.summary, innerW, 14.0f, 4.0f) + 12.0f;
@@ -671,17 +671,17 @@ namespace FmCoskunStudio {
             const float innerW = panelW - 32.0f;
             const bool enabled = isBackgroundInteractive();
 
-            // Panel iÃ§eriÄŸi alt telemetri Ã§ubuÄŸuna taÅŸmasÄ±n
+            // Panel içeriği alt telemetri çubuğuna taşmasın
             BeginScissorMode(0, static_cast<int>(layout.headerH), static_cast<int>(layout.sceneLeft),
                              static_cast<int>(layout.panelBottom - layout.headerH));
 
-            // 1. Ãœst Telemetri Etiketi
+            // 1. Üst Telemetri Etiketi
             DrawRectangle(static_cast<int>(panelX), static_cast<int>(panelY), 315, 24, Tokens::BG_SURFACE);
             DrawRectangleLines(static_cast<int>(panelX), static_cast<int>(panelY), 315, 24, Tokens::BORDER_COLOR);
             DrawCircle(static_cast<int>(panelX) + 12, static_cast<int>(panelY) + 12, 4.0f, Tokens::ACCENT_PRIMARY);
             typo.drawMono("FMCOSKUN STUDIO // ORBITAL PORTFOLIO", panelX + 24.0f, panelY + 6.0f, 11.0f, Tokens::TEXT_SECONDARY);
 
-            // 2. Ana BaÅŸlÄ±k (Hero Editorial Heading)
+            // 2. Ana Başlık (Hero Editorial Heading)
             typo.drawUi("Streaming Your Success", panelX, panelY + 34.0f, 34.0f, Tokens::TEXT_PRIMARY);
             typo.drawUi("To New Orbits", panelX, panelY + 70.0f, 34.0f, Tokens::ACCENT_PRIMARY);
 
@@ -690,13 +690,13 @@ namespace FmCoskunStudio {
                                     panelX, y, panelW, 15.0f, 4.0f, Tokens::TEXT_SECONDARY);
             y += 14.0f;
 
-            // 3. YÃ¶rÃ¼nge DÃ¼ÄŸÃ¼mÃ¼ SeÃ§ici Kartlar (Interactive Node Switcher)
+            // 3. Yörünge Düğümü Seçici Kartlar (Interactive Node Switcher)
             std::string selectorHint = "SELECT ORBITAL TELEMETRY LOCK [KEYS 1-" + std::to_string(std::min<size_t>(orbitNodes.size(), 9)) +
                                        " OR CLICK 3D NODE]:";
             typo.drawMono(typo.fitMono(selectorHint, 11.0f, panelW), panelX, y, 11.0f, Tokens::ACCENT_PRIMARY);
             y += 20.0f;
 
-            // SeÃ§ili projenin inspector yÃ¼ksekliÄŸine gÃ¶re kartlar gerekirse kompakt moda geÃ§er
+            // Seçili projenin inspector yüksekliğine göre kartlar gerekirse kompakt moda geçer
             const ProjectSpec& proj = orbitNodes[selectedOrbitIndex]->getProjectSpec();
             const float inspectorH = measureInspectorHeight(proj, innerW);
             const float fullCardsH = static_cast<float>(orbitNodes.size()) * 52.0f;
@@ -729,7 +729,7 @@ namespace FmCoskunStudio {
 
                 std::string keyTag = "[" + std::to_string(i + 1) + "] " + orbitNodes[i]->getId();
                 if (compactCards) {
-                    // Tek satÄ±r: [1] ORBIT-ALPHA  Digital Experiences
+                    // Tek satır: [1] ORBIT-ALPHA  Digital Experiences
                     float tagW = typo.measureMono(keyTag, 11.0f);
                     typo.drawMono(keyTag, panelX + 14.0f, cardY + 9.5f, 11.0f, Tokens::ACCENT_PRIMARY);
                     float labelX = panelX + 14.0f + tagW + 12.0f;
@@ -742,7 +742,7 @@ namespace FmCoskunStudio {
                 }
             }
 
-            // 4. SeÃ§ili YÃ¶rÃ¼ngenin DetaylÄ± Konsept Proje KartÄ± (Project Inspector)
+            // 4. Seçili Yörüngenin Detaylı Konsept Proje Kartı (Project Inspector)
             const float inspectorY = y + static_cast<float>(orbitNodes.size()) * cardStep + 6.0f;
             Rectangle inspRect = { panelX, inspectorY, panelW, inspectorH };
 
@@ -751,13 +751,13 @@ namespace FmCoskunStudio {
             DrawLine(static_cast<int>(panelX), static_cast<int>(inspectorY) + 32,
                      static_cast<int>(panelX + panelW), static_cast<int>(inspectorY) + 32, Tokens::BORDER_COLOR);
 
-            // Ãœst Bar: Proje Kodu & StatÃ¼sÃ¼
+            // Üst Bar: Proje Kodu & Statüsü
             const float textX = panelX + 16.0f;
             typo.drawMono(proj.code, textX, inspectorY + 10.0f, 11.0f, Tokens::ACCENT_PRIMARY);
             float statusW = typo.measureMono(proj.status, 11.0f);
             typo.drawMono(proj.status, panelX + panelW - 16.0f - statusW, inspectorY + 10.0f, 11.0f, Tokens::TEXT_SECONDARY);
 
-            // Proje BaÅŸlÄ±ÄŸÄ± ve AÃ§Ä±klamasÄ±
+            // Proje Başlığı ve Açıklaması
             typo.drawUi(typo.fitUi(proj.title, 22.0f, innerW), textX, inspectorY + 42.0f, 22.0f, Tokens::TEXT_PRIMARY);
             typo.drawMono(typo.fitMono(proj.category, 12.0f, innerW), textX, inspectorY + 68.0f, 12.0f, Tokens::ACCENT_PRIMARY);
 
@@ -768,7 +768,7 @@ namespace FmCoskunStudio {
             iy += 16.0f;
             iy += typo.drawWrappedUi(proj.architectureNote, textX, iy, innerW, 14.0f, 4.0f, Tokens::TEXT_PRIMARY) + 14.0f;
 
-            // Teknoloji Etiketleri (Tech Stack Pills) â€” sÄ±ÄŸmayan etiket alt satÄ±ra geÃ§er
+            // Teknoloji Etiketleri (Tech Stack Pills) — sığmayan etiket alt satıra geçer
             float tagX = textX;
             for (const auto& tag : proj.techStack) {
                 std::string shown = typo.fitMono(tag, 11.0f, innerW - 18.0f);
@@ -784,7 +784,7 @@ namespace FmCoskunStudio {
             }
             if (!proj.techStack.empty()) iy += 32.0f;
 
-            // 5. CanlÄ± EtkileÅŸim Aksiyon ButonlarÄ± (OpenURL & Deep-Dive Modal)
+            // 5. Canlı Etkileşim Aksiyon Butonları (OpenURL & Deep-Dive Modal)
             float btnY = iy + 10.0f;
             float btnW = (panelW - 48.0f) / 3.0f;
 
@@ -803,7 +803,7 @@ namespace FmCoskunStudio {
             EndScissorMode();
         }
 
-        // SeÃ§ili Projenin Derin Mimari DiyagramÄ± ve Telemetri Metrikleri ModalÄ±
+        // Seçili Projenin Derin Mimari Diyagramı ve Telemetri Metrikleri Modalı
         void drawDeepDiveModal() {
             if (!showDeepDiveModal || orbitNodes.empty()) return;
 
@@ -812,7 +812,7 @@ namespace FmCoskunStudio {
             const auto& node = orbitNodes[selectedOrbitIndex];
             const ProjectSpec& proj = node->getProjectSpec();
 
-            // Modal boyutu iÃ§eriÄŸe gÃ¶re hesaplanÄ±r, pencereye sÄ±ÄŸacak ÅŸekilde sÄ±nÄ±rlanÄ±r
+            // Modal boyutu içeriğe göre hesaplanır, pencereye sığacak şekilde sınırlanır
             const float modalW = std::min(780.0f, static_cast<float>(screenWidth) - 80.0f);
             const float innerW = modalW - 48.0f;
             const std::string bodyText = proj.summary + " " + proj.architectureNote;
@@ -838,13 +838,13 @@ namespace FmCoskunStudio {
                 showDeepDiveModal = false;
             }
 
-            // Modal dÄ±ÅŸÄ±ndaki karartÄ±lmÄ±ÅŸ alana tÄ±klamak da modalÄ± kapatÄ±r
+            // Modal dışındaki karartılmış alana tıklamak da modalı kapatır
             if (modalOpenAtFrameStart && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
                 !CheckCollisionPointRec(GetMousePosition(), modalRect)) {
                 showDeepDiveModal = false;
             }
 
-            // Alt butonlar her zaman gÃ¶rÃ¼nÃ¼r kalsÄ±n diye iÃ§erik, buton ÅŸeridinin Ã¼stÃ¼nde kÄ±rpÄ±lÄ±r
+            // Alt butonlar her zaman görünür kalsın diye içerik, buton şeridinin üstünde kırpılır
             const float buttonsY = modalY + modalH - 50.0f;
             BeginScissorMode(static_cast<int>(modalX), static_cast<int>(modalY + 50.0f),
                              static_cast<int>(modalW), static_cast<int>(buttonsY - modalY - 58.0f));
@@ -860,7 +860,7 @@ namespace FmCoskunStudio {
 
             y += typo.drawWrappedUi(bodyText, x, y, innerW, 15.0f, 5.0f, Tokens::TEXT_PRIMARY) + 24.0f;
 
-            // 1. Mimari AkÄ±ÅŸ DiyagramÄ± (N AÅŸamalÄ± Sistem Boru HattÄ±)
+            // 1. Mimari Akış Diyagramı (N Aşamalı Sistem Boru Hattı)
             if (stepCount > 0) {
                 typo.drawMono("SYSTEM EXECUTION PIPELINE (END-TO-END TOPOLOGY):", x, y, 11.0f, Tokens::ACCENT_PRIMARY);
                 y += 24.0f;
@@ -887,7 +887,7 @@ namespace FmCoskunStudio {
                 y += 56.0f + 22.0f;
             }
 
-            // 2. CanlÄ± Telemetri & SLA Performans BarlarÄ±
+            // 2. Canlı Telemetri & SLA Performans Barları
             if (!proj.metrics.empty()) {
                 typo.drawMono("VERIFIED TELEMETRY & BENCHMARK METRICS:", x, y, 11.0f, Tokens::ACCENT_PRIMARY);
                 y += 24.0f;
@@ -961,7 +961,7 @@ namespace FmCoskunStudio {
                                        + "  |  [L] RELOAD JSON  |  [F11/F12] SCREEN  |  " + fps;
             const std::string shortHint = fov.str() + "  |  " + vel.str() + "  |  " + fps;
 
-            // Dar pencerede uzun kÄ±sayol listesi yerine kÄ±sa Ã¶zet gÃ¶sterilir
+            // Dar pencerede uzun kısayol listesi yerine kısa özet gösterilir
             const float rightLimit = static_cast<float>(screenWidth) - layout.margin;
             std::string rightText = fullHint;
             if (rightLimit - typo.measureMono(rightText, 11.0f) < nodeEnd + 24.0f) {
@@ -978,7 +978,7 @@ namespace FmCoskunStudio {
             SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
             InitWindow(screenWidth, screenHeight, "FMCOSKUN STUDIO // Interactive 3D Desktop Portfolio v2.0 (C++17 OOP)");
             SetWindowMinSize(1100, 780);
-            SetExitKey(KEY_NULL); // ESC tuÅŸunun uygulamayÄ± kapatmak yerine sadece modalÄ± kapatmasÄ±nÄ± saÄŸla
+            SetExitKey(KEY_NULL); // ESC tuşunun uygulamayı kapatmak yerine sadece modalı kapatmasını sağla
             SetTargetFPS(60);
             typo.initialize();
             layout.compute(screenWidth, screenHeight);
@@ -1007,7 +1007,7 @@ namespace FmCoskunStudio {
                 BeginDrawing();
                 ClearBackground(Tokens::BG_PRIMARY);
 
-                // 1. 3B YÃ–RÃœNGE SAHNESÄ°NÄ° Ã‡Ä°Z (Three.js Sahnesinin C++ OpenGL KarÅŸÄ±lÄ±ÄŸÄ±)
+                // 1. 3B YÖRÜNGE SAHNESİNİ ÇİZ (Three.js Sahnesinin C++ OpenGL Karşılığı)
                 BeginMode3D(camera);
                 particleField->draw3D();
                 centralCore->draw3D();
@@ -1021,17 +1021,17 @@ namespace FmCoskunStudio {
                 }
                 EndMode3D();
 
-                // 2. 3B UYDULARIN ÃœZERÄ°NDE YÃœZEN 2B HEDEF ETÄ°KETLERÄ° (World-to-Screen HUD)
+                // 2. 3B UYDULARIN ÜZERİNDE YÜZEN 2B HEDEF ETİKETLERİ (World-to-Screen HUD)
                 draw3DWorldLabelsHUD();
 
-                // 3. 2B KULLANICI ARAYÃœZÃœ VE PORTFOLYO KARTLARINI Ã‡Ä°Z (HUD Layer)
+                // 3. 2B KULLANICI ARAYÜZÜ VE PORTFOLYO KARTLARINI ÇİZ (HUD Layer)
                 drawHeaderHUD();
                 drawLeftPortfolioDeck();
                 drawBottomTelemetryBar();
                 drawDeepDiveModal();
                 drawToastNotification();
 
-                // EtkileÅŸimli elemanlarÄ±n Ã¼zerinde fare imlecini el ikonuna dÃ¶nÃ¼ÅŸtÃ¼r
+                // Etkileşimli elemanların üzerinde fare imlecini el ikonuna dönüştür
                 SetMouseCursor(anyUiHovered ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 
                 EndDrawing();
@@ -1042,7 +1042,7 @@ namespace FmCoskunStudio {
 } // namespace FmCoskunStudio
 
 // ============================================================================
-// UYGULAMA GÄ°RÄ°Å NOKTASI (MAIN ENTRY POINT)
+// UYGULAMA GİRİŞ NOKTASI (MAIN ENTRY POINT)
 // ============================================================================
 int main() {
     FmCoskunStudio::StudioPortfolioApp app;
