@@ -229,6 +229,7 @@ namespace FmCoskunStudio {
         bool reducedMotion{false};
         bool cameraFollowSelected{false};
         bool showDeepDiveModal{false};
+        bool modalOpenAtFrameStart{false}; // Modalı açan tıklamanın aynı karede "dışarı tıklama" sayılmasını önler
         bool jsonLoadedFromDisk{false};
         bool anyUiHovered{false};
         Vector2 smoothPointer{0.0f, 0.0f};
@@ -283,9 +284,19 @@ namespace FmCoskunStudio {
             }
         }
 
-        bool drawInteractiveButton(Rectangle rect, const std::string& label, bool primaryStyle) {
+        // Arka plan katmanları (header, sol panel) modal açıkken fare girdisi almaz
+        bool isBackgroundInteractive() const {
+            return !showDeepDiveModal;
+        }
+
+        void clearSceneHover() {
+            centralCore->setHovered(false);
+            for (auto& node : orbitNodes) node->setHovered(false);
+        }
+
+        bool drawInteractiveButton(Rectangle rect, const std::string& label, bool primaryStyle, bool enabled = true) {
             Vector2 mouse = GetMousePosition();
-            bool hovered = CheckCollisionPointRec(mouse, rect);
+            bool hovered = enabled && CheckCollisionPointRec(mouse, rect);
             if (hovered) anyUiHovered = true;
 
             Color bg = primaryStyle
@@ -310,8 +321,7 @@ namespace FmCoskunStudio {
         void perform3DRaycasting(Vector2 mouse) {
             // Sol panel veya modal açıksa 3B sahne tıklamasını engelle
             if (showDeepDiveModal || mouse.x < 560.0f || mouse.y < 64.0f || mouse.y > static_cast<float>(screenHeight - 42)) {
-                centralCore->setHovered(false);
-                for (auto& node : orbitNodes) node->setHovered(false);
+                clearSceneHover();
                 return;
             }
 
@@ -363,6 +373,7 @@ namespace FmCoskunStudio {
 
             // Modal açıkken ESC ile kapatma
             if (showDeepDiveModal) {
+                clearSceneHover();
                 if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) {
                     showDeepDiveModal = false;
                 }
@@ -527,19 +538,19 @@ namespace FmCoskunStudio {
 
             // [F] Kamera Takip Rozeti
             Rectangle camRect = {static_cast<float>(rightX), 16.0f, 165.0f, 32.0f};
-            if (drawInteractiveButton(camRect, cameraFollowSelected ? "[F] CAM: LOCKED" : "[F] CAM: OVERVIEW", cameraFollowSelected)) {
+            if (drawInteractiveButton(camRect, cameraFollowSelected ? "[F] CAM: LOCKED" : "[F] CAM: OVERVIEW", cameraFollowSelected, isBackgroundInteractive())) {
                 cameraFollowSelected = !cameraFollowSelected;
             }
 
             // [R] Hareket Modu Rozeti
             Rectangle motRect = {static_cast<float>(rightX + 175), 16.0f, 180.0f, 32.0f};
-            if (drawInteractiveButton(motRect, reducedMotion ? "[R] MOTION: STATIC" : "[R] MOTION: ORBITAL", false)) {
+            if (drawInteractiveButton(motRect, reducedMotion ? "[R] MOTION: STATIC" : "[R] MOTION: ORBITAL", false, isBackgroundInteractive())) {
                 reducedMotion = !reducedMotion;
             }
 
             // [ENTER] Mimari İnceleme Butonu
             Rectangle specRect = {static_cast<float>(rightX + 365), 16.0f, 202.0f, 32.0f};
-            if (drawInteractiveButton(specRect, "[ENTER] DEEP-DIVE SPEC", true)) {
+            if (drawInteractiveButton(specRect, "[ENTER] DEEP-DIVE SPEC", true, isBackgroundInteractive())) {
                 showDeepDiveModal = true;
             }
         }
@@ -570,7 +581,7 @@ namespace FmCoskunStudio {
                 float cardY = static_cast<float>(panelY + 186 + static_cast<int>(i) * 52);
                 Rectangle cardRect = { static_cast<float>(panelX), cardY, static_cast<float>(panelW), 44.0f };
 
-                bool hovered = CheckCollisionPointRec(mouse, cardRect);
+                bool hovered = isBackgroundInteractive() && CheckCollisionPointRec(mouse, cardRect);
                 if (hovered) {
                     anyUiHovered = true;
                     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -632,14 +643,14 @@ namespace FmCoskunStudio {
             float btnY = inspectorY + 244.0f;
             float btnW = (panelW - 48.0f) / 3.0f;
 
-            if (drawInteractiveButton({static_cast<float>(panelX + 16), btnY, btnW, 38.0f}, "ARCH & METRICS", true)) {
+            if (drawInteractiveButton({static_cast<float>(panelX + 16), btnY, btnW, 38.0f}, "ARCH & METRICS", true, isBackgroundInteractive())) {
                 showDeepDiveModal = true;
             }
-            if (drawInteractiveButton({static_cast<float>(panelX + 24) + btnW, btnY, btnW, 38.0f}, "OPEN LIVE DEMO", false)) {
+            if (drawInteractiveButton({static_cast<float>(panelX + 24) + btnW, btnY, btnW, 38.0f}, "OPEN LIVE DEMO", false, isBackgroundInteractive())) {
                 OpenURL(proj.liveUrl.c_str());
                 showToast("OPENING BROWSER: " + proj.liveUrl, 2.5f);
             }
-            if (drawInteractiveButton({static_cast<float>(panelX + 32) + btnW * 2.0f, btnY, btnW, 38.0f}, "GITHUB SOURCE", false)) {
+            if (drawInteractiveButton({static_cast<float>(panelX + 32) + btnW * 2.0f, btnY, btnW, 38.0f}, "GITHUB SOURCE", false, isBackgroundInteractive())) {
                 OpenURL(proj.repoUrl.c_str());
                 showToast("OPENING REPOSITORY: " + proj.repoUrl, 2.5f);
             }
@@ -669,6 +680,12 @@ namespace FmCoskunStudio {
                           modalX + 24.0f, modalY + 17.0f, 12.0f, Tokens::ACCENT_PRIMARY);
 
             if (drawInteractiveButton({modalX + modalW - 118.0f, modalY + 10.0f, 96.0f, 28.0f}, "[ESC] CLOSE", false)) {
+                showDeepDiveModal = false;
+            }
+
+            // Modal dışındaki karartılmış alana tıklamak da modalı kapatır
+            if (modalOpenAtFrameStart && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                !CheckCollisionPointRec(GetMousePosition(), modalRect)) {
                 showDeepDiveModal = false;
             }
 
@@ -789,6 +806,7 @@ namespace FmCoskunStudio {
                 screenWidth  = GetScreenWidth();
                 screenHeight = GetScreenHeight();
                 float dt = GetFrameTime();
+                modalOpenAtFrameStart = showDeepDiveModal;
 
                 handleInput(dt);
                 updateSimulation(dt);
