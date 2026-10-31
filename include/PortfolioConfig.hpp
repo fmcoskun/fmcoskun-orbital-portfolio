@@ -2,6 +2,7 @@
 #define FMCOSKUN_PORTFOLIO_CONFIG_HPP
 
 #include "raylib.h"
+#include "MiniJson.hpp"
 #include <string>
 #include <vector>
 #include <fstream>
@@ -64,86 +65,64 @@ namespace FmCoskunStudio {
         ProjectSpec project;
     };
 
+    struct ConfigLoadResult {
+        std::vector<OrbitNodeConfig> orbits;
+        bool loadedFromFile{false};
+        std::string sourcePath; // Okunmaya çalışılan dosyanın çözümlenmiş yolu
+        std::string error;      // Yerleşik verilere düşülme sebebi (dosya hiç yoksa boş)
+    };
+
     // ========================================================================
-    // 3. HARİCİ JSON YAPILANDIRMA OKUYUCU (ZERO-DEPENDENCY JSON PARSER)
+    // 3. HARİCİ JSON YAPILANDIRMA OKUYUCU (MiniJson DOM ÜZERİNDEN)
     // ========================================================================
     class PortfolioConfigLoader {
     private:
-        static std::string extractString(const std::string& block, const std::string& key, const std::string& fallback = "") {
-            std::string pattern = "\"" + key + "\"";
-            size_t keyPos = block.find(pattern);
-            if (keyPos == std::string::npos) return fallback;
-            size_t colonPos = block.find(':', keyPos + pattern.size());
-            if (colonPos == std::string::npos) return fallback;
-            size_t firstQuote = block.find('"', colonPos + 1);
-            if (firstQuote == std::string::npos) return fallback;
-            size_t secondQuote = block.find('"', firstQuote + 1);
-            if (secondQuote == std::string::npos) return fallback;
-            return block.substr(firstQuote + 1, secondQuote - firstQuote - 1);
+        static std::string resolveConfigPath(const std::string& fileName) {
+            // Önce çalıştırılabilir dosyanın klasörüne bak; böylece exe başka bir dizinden başlatılsa da JSON bulunur
+            std::string appDir = GetApplicationDirectory();
+            if (!appDir.empty() && appDir.back() != '/' && appDir.back() != '\\') appDir += '/';
+            std::string besideExe = appDir + fileName;
+            if (FileExists(besideExe.c_str())) return besideExe;
+            return fileName;
         }
 
-        static float extractFloat(const std::string& block, const std::string& key, float fallback = 0.0f) {
-            std::string pattern = "\"" + key + "\"";
-            size_t keyPos = block.find(pattern);
-            if (keyPos == std::string::npos) return fallback;
-            size_t colonPos = block.find(':', keyPos + pattern.size());
-            if (colonPos == std::string::npos) return fallback;
-            size_t valStart = block.find_first_of("-0123456789.", colonPos + 1);
-            if (valStart == std::string::npos) return fallback;
-            size_t valEnd = block.find_first_not_of("-0123456789.", valStart);
-            std::string numStr = block.substr(valStart, valEnd - valStart);
-            char* endPtr = nullptr;
-            float val = std::strtof(numStr.c_str(), &endPtr);
-            return (endPtr != numStr.c_str()) ? val : fallback;
+        static MetricSpec parseMetric(const Json::Value& m) {
+            MetricSpec spec;
+            spec.label = m.getString("label", "Metric");
+            spec.value = m.getString("value", "100%");
+            spec.ratio = std::clamp(m.getFloat("ratio", 0.95f), 0.0f, 1.0f);
+            return spec;
         }
 
-        static std::vector<std::string> extractStringArray(const std::string& block, const std::string& key) {
-            std::vector<std::string> result;
-            std::string pattern = "\"" + key + "\"";
-            size_t keyPos = block.find(pattern);
-            if (keyPos == std::string::npos) return result;
-            size_t openBracket = block.find('[', keyPos + pattern.size());
-            if (openBracket == std::string::npos) return result;
-            size_t closeBracket = block.find(']', openBracket + 1);
-            if (closeBracket == std::string::npos) return result;
+        static OrbitNodeConfig parseOrbit(const Json::Value& o) {
+            OrbitNodeConfig cfg;
+            cfg.id           = o.getString("id", "ORBIT-NODE");
+            cfg.label        = o.getString("label", "Service Domain");
+            // Sahneyi bozacak uç değerler güvenli aralığa sıkıştırılır
+            cfg.radius       = std::clamp(o.getFloat("radius", 2.5f), 1.2f, 8.0f);
+            cfg.tiltX        = o.getFloat("tiltX", 0.3f);
+            cfg.tiltZ        = o.getFloat("tiltZ", 0.2f);
+            cfg.angularSpeed = std::clamp(o.getFloat("angularSpeed", 0.35f), -3.0f, 3.0f);
+            cfg.initialPhase = o.getFloat("initialPhase", 0.0f);
+            cfg.nodeSize     = std::clamp(o.getFloat("nodeSize", 0.15f), 0.05f, 0.6f);
 
-            std::string arrContent = block.substr(openBracket + 1, closeBracket - openBracket - 1);
-            size_t pos = 0;
-            while (true) {
-                size_t q1 = arrContent.find('"', pos);
-                if (q1 == std::string::npos) break;
-                size_t q2 = arrContent.find('"', q1 + 1);
-                if (q2 == std::string::npos) break;
-                result.push_back(arrContent.substr(q1 + 1, q2 - q1 - 1));
-                pos = q2 + 1;
+            cfg.project.code             = o.getString("code", "LAB // SYS");
+            cfg.project.title            = o.getString("title", "Untitled Project");
+            cfg.project.category         = o.getString("category", cfg.label);
+            cfg.project.status           = o.getString("status", "CONCEPT");
+            cfg.project.summary          = o.getString("summary", "");
+            cfg.project.architectureNote = o.getString("architectureNote", "");
+            cfg.project.liveUrl          = o.getString("liveUrl", "https://fmcoskun.dev");
+            cfg.project.repoUrl          = o.getString("repoUrl", "https://github.com/fmcoskun");
+            cfg.project.techStack        = o.getStringArray("techStack");
+            cfg.project.pipeline         = o.getStringArray("pipeline");
+
+            if (const Json::Value* metrics = o.find("metrics"); metrics && metrics->isArray()) {
+                for (const auto& m : metrics->items) {
+                    if (m.isObject()) cfg.project.metrics.push_back(parseMetric(m));
+                }
             }
-            return result;
-        }
-
-        static std::vector<MetricSpec> extractMetrics(const std::string& block) {
-            std::vector<MetricSpec> metrics;
-            size_t keyPos = block.find("\"metrics\"");
-            if (keyPos == std::string::npos) return metrics;
-            size_t openBracket = block.find('[', keyPos);
-            size_t closeBracket = block.find(']', openBracket);
-            if (openBracket == std::string::npos || closeBracket == std::string::npos) return metrics;
-
-            std::string arrContent = block.substr(openBracket + 1, closeBracket - openBracket - 1);
-            size_t pos = 0;
-            while (true) {
-                size_t objStart = arrContent.find('{', pos);
-                if (objStart == std::string::npos) break;
-                size_t objEnd = arrContent.find('}', objStart);
-                if (objEnd == std::string::npos) break;
-                std::string mBlock = arrContent.substr(objStart, objEnd - objStart + 1);
-                MetricSpec m;
-                m.label = extractString(mBlock, "label", "Metric");
-                m.value = extractString(mBlock, "value", "100%");
-                m.ratio = extractFloat(mBlock, "ratio", 0.95f);
-                metrics.push_back(m);
-                pos = objEnd + 1;
-            }
-            return metrics;
+            return cfg;
         }
 
     public:
@@ -215,81 +194,51 @@ namespace FmCoskunStudio {
             };
         }
 
-        static std::vector<OrbitNodeConfig> loadFromJsonFile(const std::string& filePath, bool& outLoadedFromFile) {
-            outLoadedFromFile = false;
-            std::ifstream in(filePath);
+        // Dosya yoksa sessizce yerleşik verilere düşer; dosya var ama bozuksa sebebi error alanında döner
+        static ConfigLoadResult loadFromJsonFile(const std::string& fileName) {
+            ConfigLoadResult result;
+            result.sourcePath = resolveConfigPath(fileName);
+
+            auto fallback = [&](const std::string& reason) {
+                result.orbits = getBuiltInDefaults();
+                result.loadedFromFile = false;
+                result.error = reason;
+                return result;
+            };
+
+            if (!FileExists(result.sourcePath.c_str())) {
+                return fallback("");
+            }
+
+            std::ifstream in(result.sourcePath, std::ios::binary);
             if (!in.is_open()) {
-                return getBuiltInDefaults();
+                return fallback("cannot open " + fileName);
             }
 
             std::ostringstream ss;
             ss << in.rdbuf();
-            std::string content = ss.str();
+            const std::string content = ss.str();
 
-            size_t orbitsPos = content.find("\"orbits\"");
-            if (orbitsPos == std::string::npos) {
-                return getBuiltInDefaults();
+            Json::Value root;
+            std::string parseError;
+            if (!Json::Parser(content).parse(root, parseError)) {
+                return fallback(parseError);
             }
 
-            size_t arrStart = content.find('[', orbitsPos);
-            if (arrStart == std::string::npos) {
-                return getBuiltInDefaults();
+            const Json::Value* orbits = root.find("orbits");
+            if (!orbits || !orbits->isArray()) {
+                return fallback("missing \"orbits\" array");
             }
 
-            std::vector<OrbitNodeConfig> parsedConfigs;
-            size_t pos = arrStart + 1;
-            while (pos < content.size()) {
-                size_t objStart = content.find('{', pos);
-                if (objStart == std::string::npos) break;
-
-                // Eşleşen kapanış süslü parantezini bul (iç içe metrics dizisini dikkate alarak)
-                int depth = 0;
-                size_t objEnd = std::string::npos;
-                for (size_t i = objStart; i < content.size(); ++i) {
-                    if (content[i] == '{') depth++;
-                    else if (content[i] == '}') {
-                        depth--;
-                        if (depth == 0) {
-                            objEnd = i;
-                            break;
-                        }
-                    }
-                }
-                if (objEnd == std::string::npos) break;
-
-                std::string block = content.substr(objStart, objEnd - objStart + 1);
-                OrbitNodeConfig cfg;
-                cfg.id           = extractString(block, "id", "ORBIT-NODE");
-                cfg.label        = extractString(block, "label", "Service Domain");
-                cfg.radius       = extractFloat(block, "radius", 2.5f);
-                cfg.tiltX        = extractFloat(block, "tiltX", 0.3f);
-                cfg.tiltZ        = extractFloat(block, "tiltZ", 0.2f);
-                cfg.angularSpeed = extractFloat(block, "angularSpeed", 0.35f);
-                cfg.initialPhase = extractFloat(block, "initialPhase", 0.0f);
-                cfg.nodeSize     = extractFloat(block, "nodeSize", 0.15f);
-
-                cfg.project.code             = extractString(block, "code", "LAB // SYS");
-                cfg.project.title            = extractString(block, "title", "Untitled Project");
-                cfg.project.category         = extractString(block, "category", cfg.label);
-                cfg.project.status           = extractString(block, "status", "CONCEPT");
-                cfg.project.summary          = extractString(block, "summary", "");
-                cfg.project.architectureNote = extractString(block, "architectureNote", "");
-                cfg.project.liveUrl          = extractString(block, "liveUrl", "https://fmcoskun.dev");
-                cfg.project.repoUrl          = extractString(block, "repoUrl", "https://github.com/fmcoskun");
-                cfg.project.techStack        = extractStringArray(block, "techStack");
-                cfg.project.pipeline         = extractStringArray(block, "pipeline");
-                cfg.project.metrics          = extractMetrics(block);
-
-                parsedConfigs.push_back(std::move(cfg));
-                pos = objEnd + 1;
+            for (const auto& item : orbits->items) {
+                if (item.isObject()) result.orbits.push_back(parseOrbit(item));
+            }
+            if (result.orbits.empty()) {
+                return fallback("\"orbits\" array has no valid entries");
             }
 
-            if (parsedConfigs.empty()) {
-                return getBuiltInDefaults();
-            }
-
-            outLoadedFromFile = true;
-            return parsedConfigs;
+            result.loadedFromFile = true;
+            return result;
         }
     };
 

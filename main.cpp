@@ -305,8 +305,11 @@ namespace FmCoskunStudio {
             toastTimer = duration;
         }
 
-        void rebuildOrbitsFromConfig() {
-            auto configs = PortfolioConfigLoader::loadFromJsonFile("projects.json", jsonLoadedFromDisk);
+        // Yapılandırmayı yükler ve sahneyi yeniden kurar; bir sorun varsa hata metnini döndürür
+        std::string rebuildOrbitsFromConfig() {
+            ConfigLoadResult result = PortfolioConfigLoader::loadFromJsonFile("projects.json");
+            jsonLoadedFromDisk = result.loadedFromFile;
+            const auto& configs = result.orbits;
             orbitNodes.clear();
             signalStreams.clear();
 
@@ -323,6 +326,18 @@ namespace FmCoskunStudio {
                 selectedOrbitIndex = 0;
             }
             selectOrbitNode(selectedOrbitIndex);
+            return result.error;
+        }
+
+        void reloadConfigWithToast() {
+            std::string error = rebuildOrbitsFromConfig();
+            if (!error.empty()) {
+                showToast("projects.json ERROR (" + error + ") // USING BUILT-IN FALLBACK", 5.0f);
+            } else {
+                showToast(jsonLoadedFromDisk
+                    ? "HOT-RELOADED: projects.json SUCCESSFULLY APPLIED"
+                    : "RELOADED BUILT-IN FALLBACK CONFIG", 2.6f);
+            }
         }
 
         void initializeSceneData() {
@@ -335,7 +350,10 @@ namespace FmCoskunStudio {
             centralCore = std::make_unique<CentralCore3D>("FMCOSKUN-01", "Central Studio Core");
             particleField = std::make_unique<ParticleField3D>(240);
 
-            rebuildOrbitsFromConfig();
+            std::string error = rebuildOrbitsFromConfig();
+            if (!error.empty()) {
+                showToast("projects.json ERROR (" + error + ") // USING BUILT-IN FALLBACK", 6.0f);
+            }
         }
 
         void selectOrbitNode(int index) {
@@ -465,10 +483,7 @@ namespace FmCoskunStudio {
                     : "CAMERA OVERVIEW MODE", 2.2f);
             }
             if (IsKeyPressed(KEY_L)) {
-                rebuildOrbitsFromConfig();
-                showToast(jsonLoadedFromDisk
-                    ? "HOT-RELOADED: projects.json SUCCESSFULLY APPLIED"
-                    : "RELOADED BUILT-IN FALLBACK CONFIG", 2.6f);
+                reloadConfigWithToast();
             }
             if (IsKeyPressed(KEY_SPACE)) {
                 brandLogo.triggerFlip();
@@ -968,7 +983,9 @@ namespace FmCoskunStudio {
             typo.initialize();
             layout.compute(screenWidth, screenHeight);
             initializeSceneData();
-            showToast("ORBITAL PORTFOLIO INITIALIZED // CLICK ANY 3D SATELLITE OR PRESS [ENTER]", 3.5f);
+            if (toastTimer <= 0.0f) {
+                showToast("ORBITAL PORTFOLIO INITIALIZED // CLICK ANY 3D SATELLITE OR PRESS [ENTER]", 3.5f);
+            }
         }
 
         ~StudioPortfolioApp() {
