@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(raylib QUIET)
 
 add_executable(fmcoskun_studio
-    fmcoskun_studio_3b_c_masa_st_portfolyo_uygulamas.cpp
+    main.cpp
 )
 
 if (MSVC)

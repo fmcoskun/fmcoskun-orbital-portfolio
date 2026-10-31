@@ -7,7 +7,7 @@
 
 CXX      := g++
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra
-SRC      := fmcoskun_studio_3b_c_masa_st_portfolyo_uygulamas.cpp
+SRC      := main.cpp
 
 ifeq ($(OS),Windows_NT)
     TARGET  := fmcoskun_studio.exe

@@ -12,13 +12,13 @@
  *    mingw32-make run
  *
  * 2) Windows (MinGW / g++):
- *    g++ -std=c++17 -O2 fmcoskun_studio_3b_c_masa_st_portfolyo_uygulamas.cpp -o fmcoskun_studio.exe -lraylib -lopengl32 -lgdi32 -lwinmm
+ *    g++ -std=c++17 -O2 main.cpp -o fmcoskun_studio.exe -lraylib -lopengl32 -lgdi32 -lwinmm
  *
  * 3) Linux (GCC):
- *    g++ -std=c++17 -O2 fmcoskun_studio_3b_c_masa_st_portfolyo_uygulamas.cpp -o fmcoskun_studio -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+ *    g++ -std=c++17 -O2 main.cpp -o fmcoskun_studio -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
  *
  * 4) macOS (Clang):
- *    clang++ -std=c++17 -O2 fmcoskun_studio_3b_c_masa_st_portfolyo_uygulamas.cpp -o fmcoskun_studio -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+ *    clang++ -std=c++17 -O2 main.cpp -o fmcoskun_studio -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
  *
  * KONTROLLER (INTERACTIVE CONTROLS):
  * ----------------------------------------------------------------------------
