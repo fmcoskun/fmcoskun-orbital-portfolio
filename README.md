@@ -7,9 +7,11 @@ is a satellite orbiting a central studio core. Select one to see its summary,
 architecture note, tech stack and execution pipeline. All content comes from
 `projects.json` and reloads live when you save the file.
 
-![Main view](docs/screenshot-main.png)
+![Demo: project switching, orbit camera, deep-dive modal, help panel and core pulse](docs/demo.gif)
 
-![Deep-dive modal](docs/screenshot-modal.png)
+| Main view | Deep-dive modal |
+|---|---|
+| ![Main view](docs/screenshot-main.png) | ![Deep-dive modal](docs/screenshot-modal.png) |
 
 ## Features
 
