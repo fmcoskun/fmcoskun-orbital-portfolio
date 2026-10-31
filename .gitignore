@@ -8,6 +8,8 @@ cmake-build-*/
 # Uygulama çalışırken üretilen ekran görüntüleri
 fmcoskun_capture_*.png
 fmcoskun_studio_capture.png
+# raylib F12 tuşunda kendi içinde de ekran görüntüsü alır (SUPPORT_SCREEN_CAPTURE)
+screenshot*.png
 
 # Editör / IDE
 .vscode/

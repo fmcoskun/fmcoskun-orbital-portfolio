@@ -24,21 +24,25 @@
  * ----------------------------------------------------------------------------
  * - Fare Hareketi     : 3B Kamera Paralaks Etkisi (Pointer-Ref Parallax)
  * - 3B Uyduya Tıklama : 3B Raycasting ile Doğrudan Yörünge / Proje Seçimi
+ * - Sağ Tık + Sürükle : Kamerayı Sahne Etrafında Döndür (Orbit Camera)
  * - Fare Tekerleği    : 3B Sahneye Yakınlaş / Uzaklaş (Smooth FOV Zoom)
- * - [1], [2], [3]     : Yörünge Düğümlerini Seç (ORBIT-ALPHA, BETA, GAMMA)
+ * - [1]..[9] / [TAB]  : Yörünge Düğümlerini Seç (SHIFT+TAB: Önceki)
  * - [ENTER]           : Seçili Projenin Derin Mimari & Metrik Modalını Aç
  * - [F] Tuşu          : Kamerayı Seçili 3B Uyduya Kilitle / Serbest Bırak
- * - [L] Tuşu          : projects.json Yapılandırmasını Canlı Yeniden Yükle
+ * - [C] Tuşu          : Kamera Açısını ve Zoom Seviyesini Sıfırla
+ * - [L] Tuşu          : projects.json Yapılandırmasını Yeniden Yükle (Kaydedince otomatik de yüklenir)
  * - [S] Tuşu          : Sinyal Akışlarını (Signal Streams) Aç / Kapat
  * - [R] Tuşu          : Reduced Motion (Statik / Hareketli Mod) Geçişi
  * - [Yukarı / Aşağı]  : Yörünge Hız Çarpanını (Velocity Multiplier) Ayarla
  * - [SPACE]           : FMCOSKUN Logosu 360° Karakter Dönüşünü Tetikle
- * - [F11] / [F12]     : Tam Ekran Geçişi / Ekran Görüntüsü Kaydet (.png)
+ * - [F11] / [F12]     : Tam Ekran Geçişi / Zaman Damgalı Ekran Görüntüsü Kaydet (.png)
+ * - [H] Tuşu          : Kontrol Rehberi Panelini Aç / Kapat
  * ============================================================================
  */
 
 #include "include/PortfolioConfig.hpp"
 #include "include/OrbitalEntities.hpp"
+#include <ctime>
 #include <iostream>
 #include <memory>
 
@@ -292,9 +296,23 @@ namespace FmCoskunStudio {
         bool cameraFollowSelected{false};
         bool showDeepDiveModal{false};
         bool modalOpenAtFrameStart{false}; // Modalı açan tıklamanın aynı karede "dışarı tıklama" sayılmasını önler
+        bool showHelpOverlay{false};
+        bool helpOpenAtFrameStart{false};
         bool jsonLoadedFromDisk{false};
         bool anyUiHovered{false};
         Vector2 smoothPointer{0.0f, 0.0f};
+
+        // Sağ tık sürükleme ile serbest kamera yörüngesi (yaw/pitch radyan)
+        float camYaw{0.0f};
+        float camPitch{0.0f};
+        float targetYaw{0.0f};
+        float targetPitch{0.0f};
+        bool isDraggingCamera{false};
+
+        // projects.json dosya izleyicisi (kaydedildiğinde otomatik yeniden yükleme)
+        std::string configPath{};
+        long configModTime{0};
+        float configWatchTimer{0.0f};
 
         // Bildirim (Toast Banner) Durumu
         std::string toastMessage{};
@@ -309,6 +327,8 @@ namespace FmCoskunStudio {
         std::string rebuildOrbitsFromConfig() {
             ConfigLoadResult result = PortfolioConfigLoader::loadFromJsonFile("projects.json");
             jsonLoadedFromDisk = result.loadedFromFile;
+            configPath = result.sourcePath;
+            configModTime = FileExists(configPath.c_str()) ? GetFileModTime(configPath.c_str()) : 0;
             const auto& configs = result.orbits;
             orbitNodes.clear();
             signalStreams.clear();
@@ -329,15 +349,48 @@ namespace FmCoskunStudio {
             return result.error;
         }
 
-        void reloadConfigWithToast() {
+        void reloadConfigWithToast(bool automatic = false) {
             std::string error = rebuildOrbitsFromConfig();
             if (!error.empty()) {
                 showToast("projects.json ERROR (" + error + ") // USING BUILT-IN FALLBACK", 5.0f);
+            } else if (jsonLoadedFromDisk) {
+                showToast(automatic ? "FILE CHANGE DETECTED // projects.json AUTO-RELOADED"
+                                    : "HOT-RELOADED: projects.json SUCCESSFULLY APPLIED", 2.6f);
             } else {
-                showToast(jsonLoadedFromDisk
-                    ? "HOT-RELOADED: projects.json SUCCESSFULLY APPLIED"
-                    : "RELOADED BUILT-IN FALLBACK CONFIG", 2.6f);
+                showToast("RELOADED BUILT-IN FALLBACK CONFIG", 2.6f);
             }
+        }
+
+        // Dosyanın değişim zamanını yarım saniyede bir kontrol eder (her karede disk erişimi yapmamak için)
+        void watchConfigFile(float dt) {
+            configWatchTimer += dt;
+            if (configWatchTimer < 0.5f) return;
+            configWatchTimer = 0.0f;
+
+            if (configPath.empty() || !FileExists(configPath.c_str())) return;
+            long modTime = GetFileModTime(configPath.c_str());
+            if (modTime != configModTime) {
+                reloadConfigWithToast(true);
+            }
+        }
+
+        void resetCameraView() {
+            targetYaw = 0.0f;
+            targetPitch = 0.0f;
+            cameraFollowSelected = false;
+            targetFov = 44.0f;
+        }
+
+        bool isPointInScene(Vector2 p) const {
+            return p.x >= layout.sceneLeft && p.y >= layout.headerH &&
+                   p.y <= static_cast<float>(screenHeight) - layout.footerH;
+        }
+
+        static std::string timestampedScreenshotName() {
+            std::time_t now = std::time(nullptr);
+            char buf[64];
+            std::strftime(buf, sizeof(buf), "fmcoskun_capture_%Y%m%d_%H%M%S.png", std::localtime(&now));
+            return buf;
         }
 
         void initializeSceneData() {
@@ -366,7 +419,7 @@ namespace FmCoskunStudio {
 
         // Arka plan katmanları (header, sol panel) modal açıkken fare girdisi almaz
         bool isBackgroundInteractive() const {
-            return !showDeepDiveModal;
+            return !showDeepDiveModal && !showHelpOverlay;
         }
 
         void clearSceneHover() {
@@ -400,8 +453,7 @@ namespace FmCoskunStudio {
 
         void perform3DRaycasting(Vector2 mouse) {
             // Sol panel veya modal açıksa 3B sahne tıklamasını engelle
-            if (showDeepDiveModal || mouse.x < layout.sceneLeft || mouse.y < layout.headerH ||
-                mouse.y > static_cast<float>(screenHeight) - layout.footerH) {
+            if (!isBackgroundInteractive() || isDraggingCamera || !isPointInScene(mouse)) {
                 clearSceneHover();
                 return;
             }
@@ -438,8 +490,7 @@ namespace FmCoskunStudio {
                     anyUiHovered = true;
                     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                         centralCore->triggerPulseWave();
-                        cameraFollowSelected = false;
-                        targetFov = 44.0f;
+                        resetCameraView();
                         showToast("CENTRAL CORE PULSE TRIGGERED // CAMERA RESET", 2.2f);
                     }
                 }
@@ -452,6 +503,15 @@ namespace FmCoskunStudio {
             anyUiHovered = false;
             Vector2 mouse = GetMousePosition();
 
+            // Yardım paneli açıkken yalnızca kapatma tuşları dinlenir
+            if (showHelpOverlay) {
+                clearSceneHover();
+                if (IsKeyPressed(KEY_H) || IsKeyPressed(KEY_ESCAPE)) {
+                    showHelpOverlay = false;
+                }
+                return;
+            }
+
             // Modal açıkken ESC ile kapatma
             if (showDeepDiveModal) {
                 clearSceneHover();
@@ -461,9 +521,22 @@ namespace FmCoskunStudio {
                 return;
             }
 
-            if (IsKeyPressed(KEY_ONE))   selectOrbitNode(0);
-            if (IsKeyPressed(KEY_TWO))   selectOrbitNode(1);
-            if (IsKeyPressed(KEY_THREE)) selectOrbitNode(2);
+            // [1]..[9] (üst sıra veya numpad) doğrudan seçim, TAB / SHIFT+TAB sırayla gezinme
+            for (int k = 0; k < 9; ++k) {
+                if (IsKeyPressed(KEY_ONE + k) || IsKeyPressed(KEY_KP_1 + k)) selectOrbitNode(k);
+            }
+            if (IsKeyPressed(KEY_TAB) && !orbitNodes.empty()) {
+                int count = static_cast<int>(orbitNodes.size());
+                bool backwards = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+                selectOrbitNode((selectedOrbitIndex + (backwards ? count - 1 : 1)) % count);
+            }
+            if (IsKeyPressed(KEY_H)) {
+                showHelpOverlay = true;
+            }
+            if (IsKeyPressed(KEY_C)) {
+                resetCameraView();
+                showToast("CAMERA VIEW RESET", 1.8f);
+            }
 
             if (IsKeyPressed(KEY_ENTER)) {
                 showDeepDiveModal = true;
@@ -500,8 +573,9 @@ namespace FmCoskunStudio {
                 showToast("DISPLAY MODE: FULLSCREEN TOGGLED", 2.0f);
             }
             if (IsKeyPressed(KEY_F12)) {
-                TakeScreenshot("fmcoskun_studio_capture.png");
-                showToast("SCREENSHOT SAVED: fmcoskun_studio_capture.png", 3.0f);
+                std::string shotName = timestampedScreenshotName();
+                TakeScreenshot(shotName.c_str());
+                showToast("SCREENSHOT SAVED: " + shotName, 3.0f);
             }
 
             if (IsKeyDown(KEY_UP)) {
@@ -525,19 +599,35 @@ namespace FmCoskunStudio {
             smoothPointer.x += (normX - smoothPointer.x) * 0.05f;
             smoothPointer.y += (normY - smoothPointer.y) * 0.05f;
 
-            if (!reducedMotion) {
-                camera.position.x = smoothPointer.x * 0.85f;
-                camera.position.y = 1.65f - smoothPointer.y * 0.55f;
-            } else {
-                camera.position.x = 0.0f;
-                camera.position.y = 1.65f;
+            // Sağ Tık Sürükleme ile Kamera Yörüngesi (sadece 3B sahne alanında başlar)
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && isPointInScene(mouse)) {
+                isDraggingCamera = true;
             }
+            if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+                isDraggingCamera = false;
+            }
+            if (isDraggingCamera) {
+                Vector2 delta = GetMouseDelta();
+                targetYaw   -= delta.x * 0.006f;
+                targetPitch  = Clamp(targetPitch + delta.y * 0.004f, -0.45f, 0.60f);
+            }
+            float orbitLerp = Clamp(dt * 8.0f, 0.0f, 1.0f);
+            camYaw   += (targetYaw - camYaw) * orbitLerp;
+            camPitch += (targetPitch - camPitch) * orbitLerp;
+            Matrix orbitRotation = MatrixMultiply(MatrixRotateX(-camPitch), MatrixRotateY(camYaw));
+
+            // Paralaks kameranın yerel uzayında uygulanır, ardından yörünge dönüşü eklenir
+            Vector3 localPos = reducedMotion
+                ? Vector3{ 0.0f, 1.65f, 8.2f }
+                : Vector3{ smoothPointer.x * 0.85f, 1.65f - smoothPointer.y * 0.55f, 8.2f };
+            camera.position = Vector3Transform(localPos, orbitRotation);
 
             // Kamera Hedef Kilidi (Overview veya Seçili 3B Uydu Takibi)
-            Vector3 desiredTarget = { -1.35f, 0.0f, 0.0f };
+            Vector3 desiredTarget = Vector3Transform({ -1.35f, 0.0f, 0.0f }, orbitRotation);
             if (cameraFollowSelected && !orbitNodes.empty()) {
                 Vector3 nodePos = orbitNodes[selectedOrbitIndex]->getPosition();
-                desiredTarget = { nodePos.x - 0.85f, nodePos.y * 0.65f, nodePos.z * 0.65f };
+                desiredTarget = Vector3Add({ nodePos.x, nodePos.y * 0.65f, nodePos.z * 0.65f },
+                                           Vector3Transform({ -0.85f, 0.0f, 0.0f }, orbitRotation));
             }
             float lerpFactor = Clamp(dt * 5.5f, 0.0f, 1.0f);
             cameraTargetSmooth = Vector3Lerp(cameraTargetSmooth, desiredTarget, lerpFactor);
@@ -564,6 +654,7 @@ namespace FmCoskunStudio {
                 }
             }
             particleField->update(dt, reducedMotion);
+            watchConfigFile(dt);
         }
 
         // 3B Uzaydaki Uyduların Üzerinde Yüzen 2B Telemetri Etiketleri (World-to-Screen)
@@ -918,6 +1009,64 @@ namespace FmCoskunStudio {
             }
         }
 
+        // Klavye & Fare Kontrol Rehberi (H tuşu)
+        void drawHelpOverlay() {
+            if (!showHelpOverlay) return;
+
+            struct ControlRow { const char* keys; const char* action; };
+            static const ControlRow rows[] = {
+                { "LEFT CLICK",       "Select a 3D satellite / pulse the central core" },
+                { "RIGHT DRAG",       "Orbit the camera around the scene" },
+                { "MOUSE WHEEL",      "Smooth FOV zoom" },
+                { "1 - 9  /  TAB",    "Select orbit node (SHIFT+TAB: previous)" },
+                { "ENTER",            "Open deep-dive architecture & metrics" },
+                { "F",                "Lock camera to the selected satellite" },
+                { "C",                "Reset camera angle and zoom" },
+                { "S",                "Toggle signal streams" },
+                { "R",                "Toggle reduced motion" },
+                { "UP / DOWN",        "Orbit velocity multiplier" },
+                { "L",                "Reload projects.json (also auto-reloads on save)" },
+                { "SPACE",            "Replay the FMCOSKUN logo flip" },
+                { "F11  /  F12",      "Fullscreen / save timestamped screenshot" },
+                { "H  /  ESC",        "Close this panel" },
+            };
+            const int rowCount = static_cast<int>(sizeof(rows) / sizeof(rows[0]));
+
+            DrawRectangle(0, 0, screenWidth, screenHeight, Tokens::BG_MODAL_BACK);
+
+            const float panelW = 620.0f;
+            const float rowH = 28.0f;
+            const float panelH = 64.0f + rowH * static_cast<float>(rowCount) + 20.0f;
+            const float panelX = (static_cast<float>(screenWidth) - panelW) * 0.5f;
+            const float panelY = std::max(20.0f, (static_cast<float>(screenHeight) - panelH) * 0.5f);
+            Rectangle panelRect = { panelX, panelY, panelW, panelH };
+
+            DrawRectangleRec(panelRect, Tokens::BG_SURFACE);
+            DrawRectangleLinesEx(panelRect, 2.0f, Tokens::ACCENT_PRIMARY);
+            DrawLine(static_cast<int>(panelX), static_cast<int>(panelY + 48),
+                     static_cast<int>(panelX + panelW), static_cast<int>(panelY + 48), Tokens::BORDER_COLOR);
+            typo.drawMono("CONTROL REFERENCE // KEYBOARD & MOUSE", panelX + 24.0f, panelY + 17.0f, 12.0f, Tokens::ACCENT_PRIMARY);
+
+            if (drawInteractiveButton({panelX + panelW - 118.0f, panelY + 10.0f, 96.0f, 28.0f}, "[H] CLOSE", false)) {
+                showHelpOverlay = false;
+            }
+            if (helpOpenAtFrameStart && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                !CheckCollisionPointRec(GetMousePosition(), panelRect)) {
+                showHelpOverlay = false;
+            }
+
+            float y = panelY + 64.0f;
+            for (int i = 0; i < rowCount; ++i) {
+                if (i % 2 == 0) {
+                    DrawRectangle(static_cast<int>(panelX + 12.0f), static_cast<int>(y - 5.0f),
+                                  static_cast<int>(panelW - 24.0f), static_cast<int>(rowH), Fade(Tokens::BG_PRIMARY, 0.6f));
+                }
+                typo.drawMono(rows[i].keys, panelX + 24.0f, y + 2.0f, 12.0f, Tokens::ACCENT_PRIMARY);
+                typo.drawUi(rows[i].action, panelX + 190.0f, y, 15.0f, Tokens::TEXT_PRIMARY);
+                y += rowH;
+            }
+        }
+
         void drawToastNotification() {
             if (toastTimer <= 0.0f || toastMessage.empty()) return;
 
@@ -958,8 +1107,8 @@ namespace FmCoskunStudio {
 
             const std::string fullHint = std::string("[S] STREAMS: ") + (showSignalStreams ? "ON" : "OFF")
                                        + "  |  [WHEEL] " + fov.str() + "  |  [UP/DN] " + vel.str()
-                                       + "  |  [L] RELOAD JSON  |  [F11/F12] SCREEN  |  " + fps;
-            const std::string shortHint = fov.str() + "  |  " + vel.str() + "  |  " + fps;
+                                       + "  |  [L] RELOAD JSON  |  [F11/F12] SCREEN  |  [H] HELP  |  " + fps;
+            const std::string shortHint = fov.str() + "  |  " + vel.str() + "  |  [H] HELP  |  " + fps;
 
             // Dar pencerede uzun kısayol listesi yerine kısa özet gösterilir
             const float rightLimit = static_cast<float>(screenWidth) - layout.margin;
@@ -984,7 +1133,7 @@ namespace FmCoskunStudio {
             layout.compute(screenWidth, screenHeight);
             initializeSceneData();
             if (toastTimer <= 0.0f) {
-                showToast("ORBITAL PORTFOLIO INITIALIZED // CLICK ANY 3D SATELLITE OR PRESS [ENTER]", 3.5f);
+                showToast("ORBITAL PORTFOLIO INITIALIZED // CLICK ANY 3D SATELLITE OR PRESS [H] FOR CONTROLS", 3.5f);
             }
         }
 
@@ -1000,6 +1149,7 @@ namespace FmCoskunStudio {
                 layout.compute(screenWidth, screenHeight);
                 float dt = GetFrameTime();
                 modalOpenAtFrameStart = showDeepDiveModal;
+                helpOpenAtFrameStart = showHelpOverlay;
 
                 handleInput(dt);
                 updateSimulation(dt);
@@ -1029,10 +1179,12 @@ namespace FmCoskunStudio {
                 drawLeftPortfolioDeck();
                 drawBottomTelemetryBar();
                 drawDeepDiveModal();
+                drawHelpOverlay();
                 drawToastNotification();
 
                 // Etkileşimli elemanların üzerinde fare imlecini el ikonuna dönüştür
-                SetMouseCursor(anyUiHovered ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+                SetMouseCursor(isDraggingCamera ? MOUSE_CURSOR_RESIZE_ALL
+                               : (anyUiHovered ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT));
 
                 EndDrawing();
             }
